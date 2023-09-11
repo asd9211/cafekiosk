@@ -1,17 +1,17 @@
 package sample.cafekiosk.spring.api.service.order;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import sample.cafekiosk.spring.api.service.order.request.OrderCreateRequest;
 import sample.cafekiosk.spring.api.service.order.response.OrderResponse;
 import sample.cafekiosk.spring.domain.order.OrderRepository;
+import sample.cafekiosk.spring.domain.orderproduct.OrderProductRepository;
 import sample.cafekiosk.spring.domain.product.Product;
 import sample.cafekiosk.spring.domain.product.ProductRepository;
-import sample.cafekiosk.spring.domain.product.ProductSellingStatus;
 import sample.cafekiosk.spring.domain.product.ProductType;
 
 import java.time.LocalDateTime;
@@ -19,7 +19,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
-import static org.junit.jupiter.api.Assertions.*;
+import static sample.cafekiosk.spring.domain.product.ProductSellingStatus.SELLING;
 import static sample.cafekiosk.spring.domain.product.ProductType.HANDMADE;
 
 @SpringBootTest
@@ -30,12 +30,22 @@ class OrderServiceTest {
     private ProductRepository productRepository;
 
     @Autowired
-    private OrderService orderService;
-
-    @Autowired
     private OrderRepository orderRepository;
 
-    @DisplayName("주문번호 리스트를 받아 생성한다")
+    @Autowired
+    private OrderProductRepository orderProductRepository;
+
+    @Autowired
+    private OrderService orderService;
+
+    @AfterEach
+    void tearDown() {
+        orderProductRepository.deleteAllInBatch();
+        productRepository.deleteAllInBatch();
+        orderRepository.deleteAllInBatch();
+    }
+
+    @DisplayName("주문번호 리스트를 받아 주문을 생성한다.")
     @Test
     void createOrder() {
         // given
@@ -46,19 +56,19 @@ class OrderServiceTest {
         Product product3 = createProduct(HANDMADE, "003", 5000);
         productRepository.saveAll(List.of(product1, product2, product3));
 
-        // when
         OrderCreateRequest request = OrderCreateRequest.builder()
                 .productNumbers(List.of("001", "002"))
                 .build();
 
-        OrderResponse response = orderService.createOrder(request, registeredDateTime);
+        // when
+        OrderResponse orderResponse = orderService.createOrder(request, registeredDateTime);
 
         // then
-        assertThat(response.getId()).isNotNull();
-        assertThat(response)
+        assertThat(orderResponse.getId()).isNotNull();
+        assertThat(orderResponse)
                 .extracting("registeredDateTime", "totalPrice")
                 .contains(registeredDateTime, 4000);
-        assertThat(response.getProducts()).hasSize(2)
+        assertThat(orderResponse.getProducts()).hasSize(2)
                 .extracting("productNumber", "price")
                 .containsExactlyInAnyOrder(
                         tuple("001", 1000),
@@ -102,8 +112,9 @@ class OrderServiceTest {
                 .type(type)
                 .productNumber(productNumber)
                 .price(price)
-                .sellingStatus(ProductSellingStatus.SELLING)
-                .name("메뉴이름")
+                .sellingStatus(SELLING)
+                .name("메뉴 이름")
                 .build();
     }
+
 }
