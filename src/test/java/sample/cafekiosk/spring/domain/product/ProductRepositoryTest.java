@@ -19,6 +19,19 @@ class ProductRepositoryTest {
     @Autowired
     private ProductRepository productRepository;
 
+    @Test
+    void test(){
+        Product product1 = Product.builder()
+                .productNumber("001")
+                .type(ProductType.HANDMADE)
+                .sellingStatus(ProductSellingStatus.SELLING)
+                .name("아메리카노")
+                .price(4000)
+                .build();
+
+        productRepository.save(product1);
+    }
+
     @DisplayName("원하는 판매상태를 가진 상품을 조회합니다.")
     @Test
     void findAllBySellingStatusIn(){
